@@ -1,32 +1,47 @@
-<!--
---------
-WARNING:
---------
-FOR SECURITY REASONS, USING A JAVASCRIPT WEB APP HOSTED VIA THE CORDA NODE IS NOT THE RECOMMENDED WAY TO INTERFACE
-WITH CORDA NODES! HOWEVER, FOR THIS PRE-ALPHA RELEASE IT'S A USEFUL WAY TO EXPERIMENT WITH THE PLATFORM AS IT ALLOWS
-YOU TO QUICKLY BUILD A UI FOR DEMONSTRATION PURPOSES.
-
-GOING FORWARD WE RECOMMEND IMPLEMENTING A STANDALONE WEB SERVER THAT AUTHORISES VIA THE NODE'S RPC INTERFACE. IN THE
-COMING WEEKS, WE'LL WRITE A TUTORIAL ON HOW BEST TO DO THIS.
--->
-
 <!-- Define your frontend here. -->
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Yo! CorDapp</title>
+    <title>Example CorDapp</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.0-rc.1/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.2.0/ui-bootstrap-tpls.min.js"></script>
+    <script src="js/index.js"></script>
 </head>
-<body>
-    <h1>Yo!</h1>
-    <div>Use this CorDapp via the node shell or the api which can be found at <code>http://host:post/api/yo</code>, end-points:
-    <ul>
-        <li>Send a Yo!: <code>/api/yo/yo?target=NODE</code> where NODE is the legalName of the node you want to Yo!</li>
-        <li>List your Yo's!: <code>/api/yo/yos</code></li>
-        <li>Get a list of peers: <code>/api/yo/peers</code></li>
-        <li>Get your node's name: <code>/api/yo/me</code></li>
-    </ul>
+
+<body ng-app="yoModule" ng-controller="yoCtrl as yoApp">
+
+<div class="container">
+    <h1>Yo app</h1>
+
+    <div class="col-md-3">
+        <ul class="nav nav-pills nav-stacked">
+            <li ng-repeat="peer in yoApp.peers">
+                <a data-toggle="pill" ng-href="#{{peer}}">{{peer}}</a>
+            </li>
+        </ul>
     </div>
+
+    <div class="col-md-6">
+    <div class="tab-content">
+        <div ng-repeat="peer in yoApp.peers" class="tab-pane fade" id="{{peer}}">
+            <h3>Messages with {{peer}}</h3>
+            <ul class="list-group">
+                <li ng-repeat="yo in yoApp.yos[peer]" class="list-group-item">{{yo[0]}} {{yo[1]}}</li>
+            </ul>
+        </div>
+    </div>
+    </div>
+</div>
+
 </body>
 </html>

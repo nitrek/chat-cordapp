@@ -25,19 +25,22 @@ class YoApi(val services: CordaRPCOps) {
     @GET
     @Path("yo")
     @Produces(MediaType.APPLICATION_JSON)
-    fun yo(@QueryParam(value = "target") target: String): Response {
+    fun yo(@QueryParam(value = "target") target: String, @QueryParam(value = "message") message: String): Response {
         val toYo = services.partyFromName(target) ?: throw IllegalArgumentException("Unknown party name.")
-        services.startFlowDynamic(YoFlow::class.java, toYo).returnValue.get()
-        return Response.status(Response.Status.CREATED).entity("Yo just send a Yo! to ${toYo.name}").build()
+        services.startFlowDynamic(YoFlow::class.java, toYo, message).returnValue.get()
+        return Response.status(Response.Status.CREATED).entity("You just sent a Yo! to ${toYo.name}").build()
     }
+
     @GET
     @Path("yos")
     @Produces(MediaType.APPLICATION_JSON)
     fun yos() = services.vaultAndUpdates().first.filter { it.state.data is Yo.State }
+
     @GET
     @Path("me")
     @Produces(MediaType.APPLICATION_JSON)
     fun me() = mapOf("me" to services.nodeIdentity().legalIdentity.name)
+
     @GET
     @Path("peers")
     @Produces(MediaType.APPLICATION_JSON)
@@ -45,7 +48,7 @@ class YoApi(val services: CordaRPCOps) {
 }
 
 // Flow.
-class YoFlow(val target: Party): FlowLogic<SignedTransaction>() {
+class YoFlow(val target: Party, val message: String): FlowLogic<SignedTransaction>() {
     override val progressTracker: ProgressTracker = YoFlow.tracker()
     companion object {
         object CREATING : ProgressTracker.Step("Creating a new Yo!")
@@ -59,13 +62,13 @@ class YoFlow(val target: Party): FlowLogic<SignedTransaction>() {
         val notary = serviceHub.networkMapCache.notaryNodes.single().notaryIdentity
         progressTracker.currentStep = CREATING
         val signedYo = TransactionType.General.Builder(notary)
-                .withItems(Yo.State(me, target), Command(Yo.Send(), listOf(me.owningKey)))
+                .withItems(Yo.State(me, target, message), Command(Yo.Send(), listOf(me.owningKey)))
                 .signWith(serviceHub.legalIdentityKey)
                 .toSignedTransaction(true)
         progressTracker.currentStep = VERIFYING
         signedYo.tx.toLedgerTransaction(serviceHub).verify()
         progressTracker.currentStep = SENDING
-        return subFlow(FinalityFlow(signedYo, setOf(target))).single()
+        return subFlow(FinalityFlow(signedYo, setOf(me, target))).single()
     }
 }
 
@@ -81,21 +84,23 @@ class Yo : Contract {
         "No sending Yo's to yourself!" by (yo.target != yo.origin)
         "The Yo! must be signed by the sender." by (yo.origin.owningKey == command.signers.single())
     }
+
     data class State(val origin: Party,
                      val target: Party,
-                     val yo: String = "Yo!",
+                     val yo: String,
                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
-        override val participants: List<CompositeKey> get() = listOf(target.owningKey)
+        override val participants: List<CompositeKey> get() = listOf(origin.owningKey, target.owningKey)
         override val contract get() = Yo()
         override fun isRelevant(ourKeys: Set<PublicKey>) = ourKeys.intersect(participants.keys).isNotEmpty()
-        override fun toString() = "${origin.name}: $yo"
+        override fun toString() = "${origin.name} -> ${target.name}: $yo"
     }
 }
 
 // Plugin.
 class YoPlugin : CordaPluginRegistry() {
     override val webApis = listOf(Function(::YoApi))
-    override val requiredFlows = mapOf(YoFlow::class.java.name to setOf(Party::class.java.name))
+    override val requiredFlows = mapOf(YoFlow::class.java.name to
+            setOf(Party::class.java.name, String::class.java.name))
     override val servicePlugins: List<Function<PluginServiceHub, out Any>> = listOf()
     override val staticServeDirs = mapOf("yo" to javaClass.classLoader.getResource("yoWeb").toExternalForm())
 }

@@ -34,7 +34,7 @@ class YoTests {
     @Test
     fun yoTransactionMustBeWellFormed() {
         // A pre-made Yo to Bob.
-        val yo = Yo.State(ALICE, BOB)
+        val yo = Yo.State(ALICE, BOB, "Yo!")
         // A pre-made dummy state.
         val dummyState = object : ContractState {
             override val contract get() = DUMMY_PROGRAM_ID
@@ -70,7 +70,7 @@ class YoTests {
             }
             // Sending to yourself is not allowed.
             transaction {
-                output { Yo.State(ALICE, ALICE) }
+                output { Yo.State(ALICE, ALICE, "Yo!") }
                 command(ALICE_PUBKEY) { Yo.Send() }
                 this.failsWith("No sending Yo's to yourself!")
             }
@@ -84,8 +84,8 @@ class YoTests {
 
     @Test
     fun flowWorksCorrectly() {
-        val yo = Yo.State(a.info.legalIdentity, b.info.legalIdentity)
-        val flow = YoFlow(b.info.legalIdentity)
+        val yo = Yo.State(a.info.legalIdentity, b.info.legalIdentity, "Yo!")
+        val flow = YoFlow(b.info.legalIdentity, "Yo!")
         val future = a.services.startFlow(flow).resultFuture
         net.runNetwork()
         val stx = future.getOrThrow()
