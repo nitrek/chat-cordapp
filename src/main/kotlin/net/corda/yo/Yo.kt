@@ -19,9 +19,13 @@ import javax.ws.rs.*
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
+val SERVICE_NODE_NAMES = listOf("Controller", "NetworkMapService")
+
 // API.
 @Path("yo")
 class YoApi(val services: CordaRPCOps) {
+    private val myLegalName: String = services.nodeIdentity().legalIdentity.name
+
     @GET
     @Path("yo")
     @Produces(MediaType.APPLICATION_JSON)
@@ -39,12 +43,14 @@ class YoApi(val services: CordaRPCOps) {
     @GET
     @Path("me")
     @Produces(MediaType.APPLICATION_JSON)
-    fun me() = mapOf("me" to services.nodeIdentity().legalIdentity.name)
+    fun me() = mapOf("me" to myLegalName)
 
     @GET
     @Path("peers")
     @Produces(MediaType.APPLICATION_JSON)
-    fun peers() = mapOf("peers" to services.networkMapUpdates().first.map { it.legalIdentity.name })
+    fun peers() = mapOf("peers" to services.networkMapUpdates().first
+            .map { it.legalIdentity.name }
+            .filter { it != myLegalName && it !in SERVICE_NODE_NAMES })
 }
 
 // Flow.
