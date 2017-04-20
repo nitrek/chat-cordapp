@@ -34,9 +34,16 @@
     <div class="col-md-6">
     <div class="tab-content">
         <div ng-repeat="peer in yoApp.peers" class="tab-pane fade" id="{{peer}}">
-            <h3>Messages with {{peer}}</h3>
+            <h3>Send message to {{peer}}:</h3>
+            <form>
+                <div class="form-group">
+                    <textarea class="form-control" ng-model="yoApp.form.message" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" ng-click="yoApp.send(peer)">Yo!</button>
+            </form>
+            <h3>Messages with {{peer}}:</h3>
             <ul class="list-group">
-                <li ng-repeat="yo in yoApp.yos[peer]" class="list-group-item">{{yo[0]}} {{yo[1]}}</li>
+                <li class="list-group-item" ng-repeat="yo in yoApp.yos[peer]" ng-class="yo[0] == 'Me: ' ? ' list-group-item-success' : 'list-group-item-info'">{{yo[0]}} {{yo[1]}}</li>
             </ul>
         </div>
     </div>
