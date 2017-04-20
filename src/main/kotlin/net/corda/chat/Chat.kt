@@ -1,4 +1,4 @@
-package net.corda.yo
+package net.corda.chat
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.contracts.*
@@ -22,23 +22,23 @@ import javax.ws.rs.core.Response
 val SERVICE_NODE_NAMES = listOf("Controller", "NetworkMapService")
 
 // API.
-@Path("yo")
-class YoApi(val services: CordaRPCOps) {
+@Path("chat")
+class ChatApi(val services: CordaRPCOps) {
     private val myLegalName: String = services.nodeIdentity().legalIdentity.name
 
     @GET
-    @Path("yo")
+    @Path("message")
     @Produces(MediaType.APPLICATION_JSON)
-    fun yo(@QueryParam(value = "target") target: String, @QueryParam(value = "message") message: String): Response {
-        val toYo = services.partyFromName(target) ?: throw IllegalArgumentException("Unknown party name.")
-        services.startFlowDynamic(YoFlow::class.java, toYo, message).returnValue.get()
-        return Response.status(Response.Status.CREATED).entity("You just sent a Yo! to ${toYo.name}").build()
+    fun message(@QueryParam(value = "target") target: String, @QueryParam(value = "message") message: String): Response {
+        val messageTo = services.partyFromName(target) ?: throw IllegalArgumentException("Unknown party name.")
+        services.startFlowDynamic(MessageFlow::class.java, messageTo, message).returnValue.get()
+        return Response.status(Response.Status.CREATED).entity("You just sent a message to ${messageTo.name}").build()
     }
 
     @GET
-    @Path("yos")
+    @Path("messages")
     @Produces(MediaType.APPLICATION_JSON)
-    fun yos() = services.vaultAndUpdates().first.filter { it.state.data is Yo.State }
+    fun messages() = services.vaultAndUpdates().first.filter { it.state.data is Message.State }
 
     @GET
     @Path("me")
@@ -54,12 +54,12 @@ class YoApi(val services: CordaRPCOps) {
 }
 
 // Flow.
-class YoFlow(val target: Party, val message: String): FlowLogic<SignedTransaction>() {
-    override val progressTracker: ProgressTracker = YoFlow.tracker()
+class MessageFlow(val target: Party, val message: String): FlowLogic<SignedTransaction>() {
+    override val progressTracker: ProgressTracker = tracker()
     companion object {
-        object CREATING : ProgressTracker.Step("Creating a new Yo!")
-        object VERIFYING : ProgressTracker.Step("Verifying the Yo!")
-        object SENDING : ProgressTracker.Step("Sending the Yo!")
+        object CREATING : ProgressTracker.Step("Creating a new Message!")
+        object VERIFYING : ProgressTracker.Step("Verifying the Message!")
+        object SENDING : ProgressTracker.Step("Sending the Message!")
         fun tracker() = ProgressTracker(CREATING, VERIFYING, SENDING)
     }
     @Suspendable
@@ -67,46 +67,46 @@ class YoFlow(val target: Party, val message: String): FlowLogic<SignedTransactio
         val me = serviceHub.myInfo.legalIdentity
         val notary = serviceHub.networkMapCache.notaryNodes.single().notaryIdentity
         progressTracker.currentStep = CREATING
-        val signedYo = TransactionType.General.Builder(notary)
-                .withItems(Yo.State(me, target, message), Command(Yo.Send(), listOf(me.owningKey)))
+        val signedMessage = TransactionType.General.Builder(notary)
+                .withItems(Message.State(me, target, message), Command(Message.Send(), listOf(me.owningKey)))
                 .signWith(serviceHub.legalIdentityKey)
                 .toSignedTransaction(true)
         progressTracker.currentStep = VERIFYING
-        signedYo.tx.toLedgerTransaction(serviceHub).verify()
+        signedMessage.tx.toLedgerTransaction(serviceHub).verify()
         progressTracker.currentStep = SENDING
-        return subFlow(FinalityFlow(signedYo, setOf(me, target))).single()
+        return subFlow(FinalityFlow(signedMessage, setOf(me, target))).single()
     }
 }
 
 // Contract and state.
-class Yo : Contract {
+class Message : Contract {
     class Send : TypeOnlyCommandData()
     override val legalContractReference: SecureHash = SecureHash.sha256("Yo!")
     override fun verify(tx: TransactionForContract) = requireThat {
         val command = tx.commands.requireSingleCommand<Send>()
-        "There can be no inputs when Yo'ing other parties." by (tx.inputs.isEmpty())
-        "There must be one output: The Yo!" by (tx.outputs.size == 1)
-        val yo = tx.outputs.single() as Yo.State
-        "No sending Yo's to yourself!" by (yo.target != yo.origin)
-        "The Yo! must be signed by the sender." by (yo.origin.owningKey == command.signers.single())
+        "There can be no inputs when messaging other parties." by (tx.inputs.isEmpty())
+        "There must be one output: The message!" by (tx.outputs.size == 1)
+        val message = tx.outputs.single() as State
+        "No sending messages to yourself!" by (message.target != message.origin)
+        "The message must be signed by the sender." by (message.origin.owningKey == command.signers.single())
     }
 
     data class State(val origin: Party,
                      val target: Party,
-                     val yo: String,
+                     val message: String,
                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
         override val participants: List<CompositeKey> get() = listOf(origin.owningKey, target.owningKey)
-        override val contract get() = Yo()
+        override val contract get() = Message()
         override fun isRelevant(ourKeys: Set<PublicKey>) = ourKeys.intersect(participants.keys).isNotEmpty()
-        override fun toString() = "${origin.name} -> ${target.name}: $yo"
+        override fun toString() = "${origin.name} -> ${target.name}: $message"
     }
 }
 
 // Plugin.
-class YoPlugin : CordaPluginRegistry() {
-    override val webApis = listOf(Function(::YoApi))
-    override val requiredFlows = mapOf(YoFlow::class.java.name to
+class ChatPlugin : CordaPluginRegistry() {
+    override val webApis = listOf(Function(::ChatApi))
+    override val requiredFlows = mapOf(MessageFlow::class.java.name to
             setOf(Party::class.java.name, String::class.java.name))
     override val servicePlugins: List<Function<PluginServiceHub, out Any>> = listOf()
-    override val staticServeDirs = mapOf("yo" to javaClass.classLoader.getResource("yoWeb").toExternalForm())
+    override val staticServeDirs = mapOf("chat" to javaClass.classLoader.getResource("chatWeb").toExternalForm())
 }

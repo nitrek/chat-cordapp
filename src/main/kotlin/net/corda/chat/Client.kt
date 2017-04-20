@@ -1,4 +1,4 @@
-package net.corda.yo
+package net.corda.chat
 
 import com.google.common.net.HostAndPort
 import net.corda.core.transactions.SignedTransaction
@@ -8,12 +8,12 @@ import org.slf4j.Logger
 import rx.Observable
 
 fun main(args: Array<String>) {
-    YoRPC().main(args)
+    ChatRPC().main(args)
 }
 
-private class YoRPC {
+private class ChatRPC {
     companion object {
-        val logger: Logger = loggerFor<YoRPC>()
+        val logger: Logger = loggerFor<ChatRPC>()
     }
     fun main(args: Array<String>) {
         require(args.size == 1) { "Usage: TemplateClientRPC <node address:port>" }
@@ -28,7 +28,7 @@ private class YoRPC {
         // Log the existing TemplateStates and listen for new ones.
         futureTransactions.startWith(transactions).toBlocking().subscribe { transaction ->
             transaction.tx.outputs.forEach { output ->
-                val state = output.data as Yo.State
+                val state = output.data as Message.State
                 logger.info(state.toString())
             }
         }

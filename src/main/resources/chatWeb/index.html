@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Yo CorDapp</title>
+    <title>Chat CorDapp</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
           integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
@@ -16,12 +16,12 @@
     <script src="js/index.js"></script>
 </head>
 
-<body ng-app="yoModule" ng-controller="yoCtrl as yoApp">
+<body ng-app="chatModule" ng-controller="chatCtrl as chatApp">
 
 <nav class="navbar navbar-default">
     <div class="container-fluid">
         <div class="navbar-header">
-            <a class="navbar-brand" href="#">YoApp - {{yoApp.thisNode}}</a>
+            <a class="navbar-brand" href="#">ChatApp - {{chatApp.thisNode}}</a>
         </div>
     </div>
 </nav>
@@ -31,7 +31,7 @@
     <div class="col-md-1"></div>
     <div class="col-md-3">
         <ul class="nav nav-pills nav-stacked">
-            <li ng-repeat="peer in yoApp.peers">
+            <li ng-repeat="peer in chatApp.peers">
                 <a data-toggle="pill" ng-href="#{{peer}}">{{peer}}</a>
             </li>
         </ul>
@@ -39,17 +39,20 @@
 
     <div class="col-md-7">
         <div class="tab-content">
-            <div ng-repeat="peer in yoApp.peers" class="tab-pane fade" id="{{peer}}">
+            <div ng-repeat="peer in chatApp.peers" class="tab-pane fade" id="{{peer}}">
                 <h3>Send message to {{peer}}:</h3>
                 <form>
                     <div class="form-group">
-                        <textarea class="form-control" ng-model="yoApp.form.message" rows="3"></textarea>
+                        <textarea class="form-control" ng-model="chatApp.form.message" rows="3"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary" ng-click="yoApp.send(peer)">Yo!</button>
+                    <button type="submit" class="btn btn-primary" ng-click="chatApp.send(peer)">Send!</button>
                 </form>
                 <h3>Messages with {{peer}}:</h3>
                 <ul class="list-group">
-                    <li class="list-group-item" ng-repeat="yo in yoApp.yos[peer]" ng-class="yo[0] == 'Me: ' ? ' list-group-item-success' : 'list-group-item-info'">{{yo[0]}} {{yo[1]}}</li>
+                    <li class="list-group-item" ng-repeat="message in chatApp.messages[peer]"
+                        ng-class="message[0] == 'Me: ' ? ' list-group-item-success' : 'list-group-item-info'">
+                        {{message[0]}} {{message[1]}}
+                    </li>
                 </ul>
             </div>
         </div>

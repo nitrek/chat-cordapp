@@ -1,9 +1,10 @@
-package net.corda.yo
+package net.corda.chat
 
 import net.corda.core.contracts.*
 import net.corda.core.crypto.CompositeKey
 import net.corda.core.getOrThrow
 import net.corda.core.node.services.unconsumedStates
+import net.corda.node.utilities.databaseTransaction
 import net.corda.testing.*
 import net.corda.testing.node.MockNetwork
 import org.junit.After
@@ -12,7 +13,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 
-class YoTests {
+class ChatTests {
     lateinit var net: MockNetwork
     lateinit var a: MockNetwork.MockNode
     lateinit var b: MockNetwork.MockNode
@@ -32,9 +33,9 @@ class YoTests {
     }
 
     @Test
-    fun yoTransactionMustBeWellFormed() {
+    fun messageTransactionMustBeWellFormed() {
         // A pre-made Yo to Bob.
-        val yo = Yo.State(ALICE, BOB, "Yo!")
+        val yo = Message.State(ALICE, BOB, "Yo!")
         // A pre-made dummy state.
         val dummyState = object : ContractState {
             override val contract get() = DUMMY_PROGRAM_ID
@@ -47,9 +48,9 @@ class YoTests {
             // input state present.
             transaction {
                 input { dummyState }
-                command(ALICE_PUBKEY) { Yo.Send() }
+                command(ALICE_PUBKEY) { Message.Send() }
                 output { yo }
-                this.failsWith("There can be no inputs when Yo'ing other parties.")
+                this.failsWith("There can be no inputs when messaging other parties.")
             }
             // No command.
             transaction {
@@ -65,18 +66,18 @@ class YoTests {
             // Command signed by wrong key.
             transaction {
                 output { yo }
-                command(MINI_CORP_PUBKEY) { Yo.Send() }
-                this.failsWith("The Yo! must be signed by the sender.")
+                command(MINI_CORP_PUBKEY) { Message.Send() }
+                this.failsWith("The message must be signed by the sender.")
             }
             // Sending to yourself is not allowed.
             transaction {
-                output { Yo.State(ALICE, ALICE, "Yo!") }
-                command(ALICE_PUBKEY) { Yo.Send() }
-                this.failsWith("No sending Yo's to yourself!")
+                output { Message.State(ALICE, ALICE, "Yo!") }
+                command(ALICE_PUBKEY) { Message.Send() }
+                this.failsWith("No sending messages to yourself!")
             }
             transaction {
                 output { yo }
-                command(ALICE_PUBKEY) { Yo.Send() }
+                command(ALICE_PUBKEY) { Message.Send() }
                 this.verifies()
             }
         }
@@ -84,18 +85,20 @@ class YoTests {
 
     @Test
     fun flowWorksCorrectly() {
-        val yo = Yo.State(a.info.legalIdentity, b.info.legalIdentity, "Yo!")
-        val flow = YoFlow(b.info.legalIdentity, "Yo!")
+        val yo = Message.State(a.info.legalIdentity, b.info.legalIdentity, "Yo!")
+        val flow = MessageFlow(b.info.legalIdentity, "Yo!")
         val future = a.services.startFlow(flow).resultFuture
         net.runNetwork()
         val stx = future.getOrThrow()
         // Check yo transaction is stored in the storage service and the state in the vault.
-        val bTx = b.storage.validatedTransactions.getTransaction(stx.id)
-        assertEquals(bTx, stx)
-        print("$bTx == $stx")
-        val bYo = b.vault.unconsumedStates<Yo.State>().single().state.data
-        // Strings match but the linearId's will differ.
-        assertEquals(bYo.toString(), yo.toString())
-        print("$bYo == $yo")
+        databaseTransaction(b.database) {
+            val bTx = b.storage.validatedTransactions.getTransaction(stx.id)
+            assertEquals(bTx, stx)
+            print("$bTx == $stx")
+            val bYo = b.vault.unconsumedStates<Message.State>().single().state.data
+            // Strings match but the linearId's will differ.
+            assertEquals(bYo.toString(), yo.toString())
+            print("$bYo == $yo")
+        }
     }
 }

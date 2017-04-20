@@ -1,4 +1,4 @@
-package net.corda.yo
+package net.corda.chat
 
 import com.google.common.util.concurrent.Futures
 import net.corda.core.getOrThrow

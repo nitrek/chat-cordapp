@@ -127,14 +127,14 @@ publishing {
     }
 }
 
-task runYoRPCNodeA(type: JavaExec) {
+task runChatRPCNodeA(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    main = 'net.corda.yo.ClientKt'
+    main = 'net.corda.chat.ClientKt'
     args 'localhost:10006'
 }
 
-task runYoRPCNodeB(type: JavaExec) {
+task runChatRPCNodeB(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    main = 'net.corda.yo.ClientKt'
+    main = 'net.corda.chat.ClientKt'
     args 'localhost:10009'
 }
