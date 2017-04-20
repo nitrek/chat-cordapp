@@ -17,7 +17,7 @@ You will need the following installed on your machine before you can start:
 
 To get started, clone this repository with:
 
-     git clone https://github.com/joeldudleyr3/chat-app.git
+     git clone https://github.com/joeldudleyr3/chat-cordapp.git
 
 And change directories to the newly cloned repo:
 
